@@ -45,7 +45,7 @@ def get_customer_dupes():
             print(f"+{len(collection)} customers on page {current_page}")
 
     # create the dump
-    dump_customer_dupes_by_first_name_and_last_name(collection)
+    dump_customer_dupes_by_phone_number(collection)
 
 
 def get_customers_by_page(page=1):
@@ -61,7 +61,7 @@ def get_customers_by_page(page=1):
     return response.json()
 
 
-def dump_customer_dupes_by_first_name_and_last_name(collection=[]):
+def dump_customer_dupes_by_phone_number(collection=[]):
     """[summary]
 
     Args:
