@@ -17,7 +17,7 @@ client.headers.update({'accept': 'application/json'})
 
 # CSV
 csv_file = open(
-    "hiboutik-remove-dupes-p2.csv", "w", newline="")
+    "hiboutik-remove-dupes-p4-only.csv", "w", newline="")
 csv_writer = csv.writer(csv_file, delimiter=",")
 csv_writer.writerow([
     "name",
@@ -55,7 +55,8 @@ def dump_first_name_last_name_dupe(files):
 
             for id in ids:
                 meta = get_customer(id)
-                metas.append(meta)
+                if meta:
+                    metas.append(meta)
 
             get_dumps(customer, metas)
             csv_writer.writerow([])
@@ -66,8 +67,11 @@ def dump_first_name_last_name_dupe(files):
 def get_customer(id=False):
     if id == False:
         return False
-    response = client.get(f"{HOST}/customer/{id}")
-    return response.json()[0]
+    try:
+        response = client.get(f"{HOST}/customer/{id}")
+        return response.json()[0]
+    except Exception:
+        pass
 
 
 def get_dumps(customer, metas):
@@ -106,7 +110,7 @@ def get_dumps(customer, metas):
         else:
             dump['priority'] = 1
 
-    if 4 not in [x["priority"] for x in dumps]:
+    if 2 not in [x["priority"] for x in dumps]:
         for dump in dumps:
             csv_writer.writerow(dump.values())
 
@@ -126,5 +130,38 @@ def get_sale(sale_id=False):
     return response.json()[0]
 
 
+def hiboutik_delete_customer(id):
+    client.delete(f"{HOST}/customer/{id}")
+
+
+def process_p4():
+    customers = {}
+    with open("./hiboutik-remove-dupes-p4.csv", 'r') as f:
+        for idx, line in enumerate(f.readlines()):
+            if len(line) == 1:
+                continue
+            if idx > 0:
+                values = line.split(',')
+                identifier = values[0].replace('\n', '')
+                hid = values[1]
+
+                if identifier not in customers.keys():
+                    customers[identifier] = []
+                if hid not in hids_processed:
+                    customers[identifier].append({
+                        "id": hid,
+                        "priority": values[2].replace("\n", "")
+                    })
+                    hids_processed.append(hid)
+    for key in customers.keys():
+        dupes = customers[key]
+        if len(dupes) > 1:
+            # print(key, len(dupes))
+            for dupe in dupes:
+                if dupe["priority"] != "4":
+                    hiboutik_delete_customer(dupe["id"])
+                    print(f"DELETE {dupe['id']} P: {dupe['priority']}")
+
+
 if __name__ == '__main__':
-    dump_first_name_last_name_dupe(glob.glob('./dupes/*.csv'))
+    process_p4()
